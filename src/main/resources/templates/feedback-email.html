@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Donnez votre avis</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a5276, #2ecc71);
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: white;
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.85);
+            margin: 8px 0 0 0;
+            font-size: 15px;
+        }
+
+        .body {
+            padding: 35px 30px;
+        }
+
+        .body p {
+            color: #444;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .stars {
+            font-size: 36px;
+            text-align: center;
+            margin: 20px 0 10px 0;
+        }
+
+        .cta-button {
+            display: block;
+            width: fit-content;
+            margin: 25px auto;
+            padding: 14px 35px;
+            background: linear-gradient(135deg, #1a5276, #2ecc71);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .footer {
+            background: #f8f8f8;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+            border-top: 1px solid #eee;
+        }
+
+        .event-box {
+            background: #f0faf5;
+            border-left: 4px solid #2ecc71;
+            border-radius: 6px;
+            padding: 15px 20px;
+            margin: 20px 0;
+        }
+
+        .event-box h3 {
+            margin: 0 0 4px 0;
+            color: #1a5276;
+            font-size: 17px;
+        }
+
+        .event-box p {
+            margin: 0;
+            color: #555;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⭐ Votre avis compte !</h1>
+            <p>Merci d'avoir participé à notre événement</p>
+        </div>
+        <div class="body">
+            <p>Bonjour <strong th:text="${userName}">Prénom</strong>,</p>
+            <p>
+                Nous espérons que vous avez apprécié votre participation à l'événement :
+            </p>
+            <div class="event-box">
+                <h3 th:text="${eventTitle}">Nom de l'événement</h3>
+                <p>Merci d'avoir été présent !</p>
+            </div>
+            <p>
+                Votre retour est précieux pour nous aider à améliorer nos futurs événements.
+                Prenez 30 secondes pour nous laisser une note de <strong>1 à 5 étoiles</strong>.
+            </p>
+            <div class="stars">⭐⭐⭐⭐⭐</div>
+            <a th:href="${feedbackLink}" class="cta-button">
+                Donner mon avis
+            </a>
+            <p style="font-size: 13px; color: #888; text-align: center;">
+                En cliquant sur le bouton, vous serez redirigé vers notre formulaire de satisfaction.
+            </p>
+        </div>
+        <div class="footer">
+            <p>© 2025 School Platform — Esprit School of Engineering</p>
+            <p>Ce message est automatique, merci de ne pas y répondre directement.</p>
+        </div>
+    </div>
+</body>
+
+</html>

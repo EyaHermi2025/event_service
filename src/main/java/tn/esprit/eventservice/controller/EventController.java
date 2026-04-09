@@ -6,9 +6,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.eventservice.entity.Event;
 import tn.esprit.eventservice.entity.EventType;
+import tn.esprit.eventservice.entity.EventRegistration;
+import tn.esprit.eventservice.dto.EventRegistrationDto;
+import tn.esprit.eventservice.dto.EventStatsDTO;
 import tn.esprit.eventservice.service.EventService;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/events")
@@ -31,6 +36,16 @@ public class EventController {
         return eventService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/budget-stats")
+    public ResponseEntity<tn.esprit.eventservice.dto.BudgetStatsDTO> getBudgetStats() {
+        return ResponseEntity.ok(eventService.getBudgetStats());
+    }
+
+    @GetMapping("/stats/global")
+    public ResponseEntity<EventStatsDTO> getGlobalStats() {
+        return ResponseEntity.ok(eventService.getGlobalStats());
     }
 
     @PostMapping
@@ -103,5 +118,37 @@ public class EventController {
     @GetMapping("/{id}/physical-space-ids")
     public ResponseEntity<List<Long>> getPhysicalSpaceIds(@PathVariable("id") Long id) {
         return ResponseEntity.ok(eventService.getPhysicalSpaceIdsByEventId(id));
+    }
+
+    @PostMapping("/{id}/register")
+    public ResponseEntity<?> registerForEvent(@PathVariable("id") Long id,
+            @Valid @RequestBody EventRegistrationDto dto) {
+        try {
+            EventRegistration registration = eventService.registerForEvent(id, dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(registration);
+        } catch (Exception e) {
+            java.util.Map<String, String> errorDetails = new java.util.HashMap<>();
+            errorDetails.put("error", e.getMessage() != null ? e.getMessage() : "Failed to register for the event");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDetails);
+        }
+    }
+
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<EventStatsDTO> getEventStats(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(eventService.getEventStats(id));
+    }
+
+    @PostMapping("/registrations/checkin/{token}")
+    public ResponseEntity<?> checkIn(@PathVariable("token") String token) {
+        try {
+            eventService.checkInStudent(token);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Check-in successful!");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
     }
 }
