@@ -57,13 +57,6 @@ public class Event {
     @com.fasterxml.jackson.annotation.JsonProperty("EstimatedCost")
     private Double estimatedCost = 0.0;
 
-    @Column(name = "satisfaction_score")
-    @com.fasterxml.jackson.annotation.JsonProperty("SatisfactionScore")
-    private Double satisfactionScore;
-
-    @Column(name = "feedback_sent", nullable = false)
-    private Boolean feedbackSent = false;
-
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonIgnoreProperties("event")
     private List<EventPhysicalSpace> physicalSpaceRefs = new ArrayList<>();
@@ -175,22 +168,6 @@ public class Event {
 
     public void setEstimatedCost(Double estimatedCost) {
         this.estimatedCost = estimatedCost;
-    }
-
-    public Double getSatisfactionScore() {
-        return satisfactionScore;
-    }
-
-    public void setSatisfactionScore(Double satisfactionScore) {
-        this.satisfactionScore = satisfactionScore;
-    }
-
-    public Boolean getFeedbackSent() {
-        return feedbackSent;
-    }
-
-    public void setFeedbackSent(Boolean feedbackSent) {
-        this.feedbackSent = feedbackSent != null ? feedbackSent : false;
     }
 
     public static EventBuilder builder() {
