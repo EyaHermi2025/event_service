@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@lombok.extern.slf4j.Slf4j
 public class TicketService {
 
     private final QRCodeService qrCodeService;
@@ -50,7 +51,7 @@ public class TicketService {
                     "Ticket_" + event.getTitle().replaceAll("\\s+", "_") + ".pdf");
 
         } catch (Exception e) {
-            System.err.println("Error generating ticket: " + e.getMessage());
+            log.error("Error generating ticket for event {}: {}", event.getTitle(), e.getMessage());
         }
     }
 

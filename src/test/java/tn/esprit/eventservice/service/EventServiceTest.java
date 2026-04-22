@@ -25,7 +25,7 @@ import tn.esprit.eventservice.client.ClubClient;
 import tn.esprit.eventservice.exception.ResourceNotFoundException;
 
 @ExtendWith(MockitoExtension.class)
-public class EventServiceTest {
+class EventServiceTest {
 
     @Mock
     private EventRepository eventRepository;
@@ -53,19 +53,21 @@ public class EventServiceTest {
 
     @BeforeEach
     void setUp() {
-        testEvent = new Event();
-        testEvent.setId(1L);
-        testEvent.setTitle("Test Workshop");
-        testEvent.setType(EventType.WORKSHOP);
-        testEvent.setStartDate(LocalDateTime.now().plusDays(1));
-        testEvent.setEndDate(LocalDateTime.now().plusDays(1).plusHours(2));
-        testEvent.setEstimatedCost(100.0);
-        testEvent.setClubId(10L);
+        testEvent = Event.builder()
+                .id(1L)
+                .title("Test Workshop")
+                .type(EventType.WORKSHOP)
+                .startDate(LocalDateTime.now().plusDays(1))
+                .endDate(LocalDateTime.now().plusDays(1).plusHours(2))
+                .estimatedCost(100.0)
+                .clubId(10L)
+                .build();
 
-        mockDto = new EventRegistrationDto();
-        mockDto.setUserId(100L);
-        mockDto.setUserName("Eya Hermi");
-        mockDto.setUserEmail("eya@example.com");
+        mockDto = EventRegistrationDto.builder()
+                .userId(100L)
+                .userName("Eya Hermi")
+                .userEmail("eya@example.com")
+                .build();
     }
 
     @Test
@@ -96,7 +98,7 @@ public class EventServiceTest {
 
         assertNotNull(created);
         assertEquals("Test Workshop", created.getTitle());
-        verify(clubClient, times(1)).deductBudget(eq(10L), eq(100.0));
+        verify(clubClient, times(1)).deductBudget(10L, 100.0);
         verify(eventRepository, times(1)).save(testEvent);
     }
 
@@ -120,31 +122,33 @@ public class EventServiceTest {
 
     @Test
     void testRegisterForEvent_Success_WhenCapacityAvailable() {
-        testEvent.setMaxParticipants(5); // Capacity strictly > 0
+        testEvent.setMaxParticipants(5);
         when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
         when(eventRegistrationRepository.existsByEventIdAndUserId(1L, 100L)).thenReturn(false);
         
-        EventRegistration savedReg = new EventRegistration();
-        savedReg.setId(10L);
-        savedReg.setStatus(RegistrationStatus.CONFIRMED);
+        EventRegistration savedReg = EventRegistration.builder()
+                .id(10L)
+                .status(RegistrationStatus.CONFIRMED)
+                .build();
         when(eventRegistrationRepository.save(any(EventRegistration.class))).thenReturn(savedReg);
 
         EventRegistration result = eventService.registerForEvent(1L, mockDto);
 
         assertEquals(RegistrationStatus.CONFIRMED, result.getStatus());
-        assertEquals(4, testEvent.getMaxParticipants()); // Decrement triggered
+        assertEquals(4, testEvent.getMaxParticipants());
         verify(eventRepository, times(1)).save(testEvent);
     }
 
     @Test
     void testRegisterForEvent_Waitlisted_WhenCapacityIsZero() {
-        testEvent.setMaxParticipants(0); // Capacity == 0
+        testEvent.setMaxParticipants(0);
         when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
         when(eventRegistrationRepository.existsByEventIdAndUserId(1L, 100L)).thenReturn(false);
         
-        EventRegistration savedReg = new EventRegistration();
-        savedReg.setId(11L);
-        savedReg.setStatus(RegistrationStatus.WAITLISTED);
+        EventRegistration savedReg = EventRegistration.builder()
+                .id(11L)
+                .status(RegistrationStatus.WAITLISTED)
+                .build();
         when(eventRegistrationRepository.save(any(EventRegistration.class))).thenAnswer(invocation -> {
             EventRegistration arg = invocation.getArgument(0);
             arg.setId(11L);
@@ -154,7 +158,7 @@ public class EventServiceTest {
         EventRegistration result = eventService.registerForEvent(1L, mockDto);
 
         assertEquals(RegistrationStatus.WAITLISTED, result.getStatus());
-        assertEquals(0, testEvent.getMaxParticipants()); // No decrement if waitlisted
-        verify(eventRepository, never()).save(testEvent); // Capacity not updated in DB
+        assertEquals(0, testEvent.getMaxParticipants());
+        verify(eventRepository, never()).save(testEvent);
     }
 }

@@ -5,21 +5,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.eventservice.entity.Event;
-import tn.esprit.eventservice.entity.EventType;
 import tn.esprit.eventservice.entity.EventRegistration;
+import tn.esprit.eventservice.entity.RegistrationStatus;
+import tn.esprit.eventservice.dto.EventDTO;
 import tn.esprit.eventservice.dto.EventRegistrationDto;
 import tn.esprit.eventservice.dto.EventStatsDTO;
+import tn.esprit.eventservice.dto.BudgetStatsDTO;
 import tn.esprit.eventservice.service.EventService;
 
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/events")
 @CrossOrigin(origins = "*")
 public class EventController {
-
     private final EventService eventService;
 
     public EventController(EventService eventService) {
@@ -27,33 +26,30 @@ public class EventController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Event>> getAll() {
-        return ResponseEntity.ok(eventService.findAll());
+    public ResponseEntity<List<EventDTO>> getAll() {
+        List<EventDTO> list = eventService.findAll().stream()
+                .map(this::mapToDTO)
+                .toList();
+        return ResponseEntity.ok(list);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Event> getById(@PathVariable("id") Long id) {
+    public ResponseEntity<EventDTO> getById(@PathVariable("id") Long id) {
         return eventService.findById(id)
-                .map(ResponseEntity::ok)
+                .map(e -> ResponseEntity.ok(mapToDTO(e)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody Event event) {
-        try {
-            Event created = eventService.create(event, null);
-            return ResponseEntity.status(HttpStatus.CREATED).body(created);
-        } catch (Exception e) {
-            java.util.Map<String, String> errorDetails = new java.util.HashMap<>();
-            errorDetails.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDetails);
-        }
+    public ResponseEntity<EventDTO> create(@Valid @RequestBody EventDTO dto) {
+        Event created = eventService.create(mapToEntity(dto), null);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapToDTO(created));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Event> update(@PathVariable("id") Long id, @Valid @RequestBody Event event) {
-        Event updated = eventService.update(id, event, null);
-        return ResponseEntity.ok(updated);
+    public ResponseEntity<EventDTO> update(@PathVariable("id") Long id, @Valid @RequestBody EventDTO dto) {
+        Event updated = eventService.update(id, mapToEntity(dto), null);
+        return ResponseEntity.ok(mapToDTO(updated));
     }
 
     @DeleteMapping("/{id}")
@@ -63,16 +59,10 @@ public class EventController {
     }
 
     @PostMapping("/{id}/register")
-    public ResponseEntity<?> registerForEvent(@PathVariable("id") Long id,
-            @Valid @RequestBody EventRegistrationDto dto) {
-        try {
-            EventRegistration registration = eventService.registerForEvent(id, dto);
-            return ResponseEntity.status(HttpStatus.CREATED).body(registration);
-        } catch (Exception e) {
-            java.util.Map<String, String> errorDetails = new java.util.HashMap<>();
-            errorDetails.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDetails);
-        }
+    public ResponseEntity<EventRegistrationDto> registerForEvent(@PathVariable("id") Long id,
+                                                               @Valid @RequestBody EventRegistrationDto dto) {
+        EventRegistration registration = eventService.registerForEvent(id, dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapRegToDTO(registration));
     }
 
     @GetMapping("/{id}/is-registered")
@@ -81,8 +71,11 @@ public class EventController {
     }
 
     @GetMapping("/my-registrations")
-    public ResponseEntity<List<EventRegistration>> getUserRegistrations(@RequestParam("userId") Long userId) {
-        return ResponseEntity.ok(eventService.getUserRegistrations(userId));
+    public ResponseEntity<List<EventRegistrationDto>> getUserRegistrations(@RequestParam("userId") Long userId) {
+        List<EventRegistrationDto> list = eventService.getUserRegistrations(userId).stream()
+                .map(this::mapRegToDTO)
+                .toList();
+        return ResponseEntity.ok(list);
     }
 
     @GetMapping("/{id}/stats")
@@ -96,14 +89,14 @@ public class EventController {
     }
 
     @GetMapping("/budget")
-    public ResponseEntity<tn.esprit.eventservice.dto.BudgetStatsDTO> getBudgetStats() {
+    public ResponseEntity<BudgetStatsDTO> getBudgetStats() {
         return ResponseEntity.ok(eventService.getBudgetStats());
     }
 
     @GetMapping("/registrations/{id}")
-    public ResponseEntity<EventRegistration> getRegistrationById(@PathVariable("id") Long id) {
+    public ResponseEntity<EventRegistrationDto> getRegistrationById(@PathVariable("id") Long id) {
         return eventService.getRegistrationById(id)
-                .map(ResponseEntity::ok)
+                .map(r -> ResponseEntity.ok(mapRegToDTO(r)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -114,13 +107,66 @@ public class EventController {
     }
 
     @GetMapping("/{id}/waitlist")
-    public ResponseEntity<List<EventRegistration>> getWaitlist(@PathVariable("id") Long id) {
-        return ResponseEntity.ok(eventService.getRegistrationsByEventAndStatus(id, tn.esprit.eventservice.entity.RegistrationStatus.WAITLISTED));
+    public ResponseEntity<List<EventRegistrationDto>> getWaitlist(@PathVariable("id") Long id) {
+        List<EventRegistrationDto> list = eventService.getRegistrationsByEventAndStatus(id, RegistrationStatus.WAITLISTED).stream()
+                .map(this::mapRegToDTO)
+                .toList();
+        return ResponseEntity.ok(list);
     }
 
     @PostMapping("/registrations/{id}/promote")
     public ResponseEntity<Void> promoteFromWaitlist(@PathVariable("id") Long id) {
         eventService.promoteFromWaitlist(id);
         return ResponseEntity.ok().build();
+    }
+
+    private EventDTO mapToDTO(Event event) {
+        return EventDTO.builder()
+                .id(event.getId())
+                .title(event.getTitle())
+                .type(event.getType())
+                .startDate(event.getStartDate())
+                .endDate(event.getEndDate())
+                .manifesto(event.getManifesto())
+                .maxParticipants(event.getMaxParticipants())
+                .status(event.getStatus())
+                .clubId(event.getClubId())
+                .estimatedCost(event.getEstimatedCost())
+                .build();
+    }
+
+    private Event mapToEntity(EventDTO dto) {
+        return Event.builder()
+                .id(dto.getId())
+                .title(dto.getTitle())
+                .type(dto.getType())
+                .startDate(dto.getStartDate())
+                .endDate(dto.getEndDate())
+                .manifesto(dto.getManifesto())
+                .maxParticipants(dto.getMaxParticipants())
+                .status(dto.getStatus())
+                .clubId(dto.getClubId())
+                .estimatedCost(dto.getEstimatedCost())
+                .build();
+    }
+
+    private EventRegistrationDto mapRegToDTO(EventRegistration reg) {
+        return EventRegistrationDto.builder()
+                .id(reg.getId())
+                .eventId(reg.getEventId())
+                .userName(reg.getUserName())
+                .userEmail(reg.getUserEmail())
+                .userId(reg.getUserId())
+                .registrationDate(reg.getRegistrationDate())
+                .discoverySource(reg.getDiscoverySource())
+                .gender(reg.getGender())
+                .reason(reg.getReason())
+                .level(reg.getLevel())
+                .hobbies(reg.getHobbies())
+                .paymentMethod(reg.getPaymentMethod())
+                .seatNumber(reg.getSeatNumber())
+                .status(reg.getStatus())
+                .attended(reg.getAttended())
+                .build();
     }
 }

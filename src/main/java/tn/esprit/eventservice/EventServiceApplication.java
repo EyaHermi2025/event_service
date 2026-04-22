@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 @EnableDiscoveryClient
 @EnableAsync
 @EnableScheduling
+@lombok.extern.slf4j.Slf4j
 public class EventServiceApplication {
 
     public static void main(String[] args) {
@@ -55,7 +56,7 @@ public class EventServiceApplication {
                 eventRepository.save(event1);
                 eventRepository.save(event2);
 
-                System.out.println("✅ Mock events inserted into database successfully! (Total Budget = 6000.0)");
+                log.info("✅ Mock events inserted into database successfully! (Total Budget = 6000.0)");
             }
         };
     }

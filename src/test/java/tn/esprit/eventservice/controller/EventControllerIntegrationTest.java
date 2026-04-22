@@ -22,7 +22,7 @@ import tn.esprit.eventservice.service.EventService;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-public class EventControllerIntegrationTest {
+class EventControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -31,36 +31,38 @@ public class EventControllerIntegrationTest {
     private EventService eventService;
 
     @Test
-    public void testGetAllEvents() throws Exception {
-        Event event = new Event();
-        event.setId(1L);
-        event.setTitle("Integration Test Event");
-        event.setType(EventType.COMPETITION);
+    void testGetAllEvents() throws Exception {
+        Event event = Event.builder()
+                .id(1L)
+                .title("Integration Test Event")
+                .type(EventType.COMPETITION)
+                .build();
 
         when(eventService.findAll()).thenReturn(Arrays.asList(event));
 
         mockMvc.perform(get("/api/events")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].Title").value("Integration Test Event"));
+                .andExpect(jsonPath("$[0].title").value("Integration Test Event"));
     }
 
     @Test
-    public void testGetEventById_Found() throws Exception {
-        Event event = new Event();
-        event.setId(1L);
-        event.setTitle("Specific Event");
+    void testGetEventById_Found() throws Exception {
+        Event event = Event.builder()
+                .id(1L)
+                .title("Specific Event")
+                .build();
 
         when(eventService.findById(1L)).thenReturn(Optional.of(event));
 
         mockMvc.perform(get("/api/events/1")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.Title").value("Specific Event"));
+                .andExpect(jsonPath("$.title").value("Specific Event"));
     }
 
     @Test
-    public void testGetEventById_NotFound() throws Exception {
+    void testGetEventById_NotFound() throws Exception {
         when(eventService.findById(99L)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/events/99")

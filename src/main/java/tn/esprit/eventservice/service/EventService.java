@@ -269,11 +269,11 @@ public class EventService {
                 .limit(5)
                 .map(entry -> {
                     String title = eventRepository.findById(entry.getKey())
-                            .map(e -> e.getTitle())
+                            .map(Event::getTitle)
                             .orElse("Event #" + entry.getKey());
                     return new tn.esprit.eventservice.dto.TopEventDTO(entry.getKey(), title, entry.getValue());
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         stats.setTopEvents(topEvents);
         return stats;
@@ -281,12 +281,18 @@ public class EventService {
 
     private EventStatsDTO calculateStats(List<EventRegistration> registrations) {
         if (registrations.isEmpty()) {
-            return new EventStatsDTO(0L, 0L, 0L, 0.0, 0.0, Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+            return EventStatsDTO.builder()
+                    .discoverySourceDistribution(Map.of())
+                    .genderDistribution(Map.of())
+                    .specialtyDistribution(Map.of())
+                    .paymentMethodDistribution(Map.of())
+                    .participationModeDistribution(Map.of())
+                    .build();
         }
 
         long totalInscribed = registrations.size();
         long confirmedCount = registrations.stream().filter(r -> r.getStatus() == RegistrationStatus.CONFIRMED).count();
-        long totalAttended = registrations.stream().filter(EventRegistration::isAttended).count();
+        long totalAttended = registrations.stream().filter(EventRegistration::getAttended).count();
         double attendanceRate = (double) totalAttended / totalInscribed * 100;
         double averageRating = registrations.stream()
                 .filter(r -> r.getFeedbackRating() != null)
@@ -313,8 +319,18 @@ public class EventService {
                 .filter(r -> r.getParticipationMode() != null && !r.getParticipationMode().isEmpty())
                 .collect(Collectors.groupingBy(EventRegistration::getParticipationMode, Collectors.counting()));
 
-        return new EventStatsDTO(totalInscribed, confirmedCount, totalAttended, attendanceRate, averageRating,
-                discovery, genders, specialties, payments, modes);
+        return EventStatsDTO.builder()
+                .totalInscribed(totalInscribed)
+                .confirmedCount(confirmedCount)
+                .totalAttended(totalAttended)
+                .attendanceRate(attendanceRate)
+                .averageRating(averageRating)
+                .discoverySourceDistribution(discovery)
+                .genderDistribution(genders)
+                .specialtyDistribution(specialties)
+                .paymentMethodDistribution(payments)
+                .participationModeDistribution(modes)
+                .build();
     }
 
     @Transactional(readOnly = true)
