@@ -81,7 +81,7 @@ class EventControllerIntegrationTest {
         mockMvc.perform(post("/api/events/1/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
     }
 
     @Test
@@ -99,7 +99,7 @@ class EventControllerIntegrationTest {
     @Test
     void testGetBudgetStats() throws Exception {
         when(eventService.getBudgetStats()).thenReturn(BudgetStatsDTO.builder().build());
-        mockMvc.perform(get("/api/events/stats/budget")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/events/budget")).andExpect(status().isOk());
     }
 
     @Test
