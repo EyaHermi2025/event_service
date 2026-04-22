@@ -27,7 +27,8 @@ class BoilerplateCoverageTest {
         assertEquals("Test", event.getTitle());
         assertNotNull(event.toString());
         assertNotEquals(0, event.hashCode());
-        assertEquals(event, event);
+        Event sameEvent = Event.builder().id(1L).title("Test").build();
+        assertEquals(event, sameEvent);
         assertNotEquals(null, event);
 
         // EventRegistration
@@ -55,6 +56,9 @@ class BoilerplateCoverageTest {
     void testDtoBoilerplate() {
         // EventDTO
         EventDTO eventDto = EventDTO.builder().id(1L).title("DTO").build();
+        EventDTO eventDto2 = EventDTO.builder().id(1L).title("DTO").build();
+        assertEquals(eventDto, eventDto2);
+        assertEquals(eventDto.hashCode(), eventDto2.hashCode());
         assertEquals(1L, eventDto.getId());
         assertEquals("DTO", eventDto.getTitle());
 
