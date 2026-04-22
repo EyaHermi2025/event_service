@@ -179,21 +179,21 @@ public class EventService {
             status = RegistrationStatus.WAITLISTED;
         }
 
-        EventRegistration registration = new EventRegistration(
-                eventId,
-                dto.getUserName(),
-                dto.getUserEmail(),
-                dto.getUserId(),
-                LocalDateTime.now());
-        
-        registration.setStatus(status);
-        registration.setDiscoverySource(dto.getDiscoverySource());
-        registration.setGender(dto.getGender());
-        registration.setReason(dto.getReason());
-        registration.setLevel(dto.getLevel());
-        registration.setHobbies(dto.getHobbies());
-        registration.setPaymentMethod(dto.getPaymentMethod());
-        registration.setSeatNumber(dto.getSeatNumber());
+        EventRegistration registration = EventRegistration.builder()
+                .eventId(eventId)
+                .userName(dto.getUserName())
+                .userEmail(dto.getUserEmail())
+                .userId(dto.getUserId())
+                .registrationDate(LocalDateTime.now())
+                .status(status)
+                .discoverySource(dto.getDiscoverySource())
+                .gender(dto.getGender())
+                .reason(dto.getReason())
+                .level(dto.getLevel())
+                .hobbies(dto.getHobbies())
+                .paymentMethod(dto.getPaymentMethod())
+                .seatNumber(dto.getSeatNumber())
+                .build();
 
         EventRegistration saved = eventRegistrationRepository.save(registration);
 
