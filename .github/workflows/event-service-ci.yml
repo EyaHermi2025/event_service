@@ -37,5 +37,5 @@ jobs:
         working-directory: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.EventServiceToken }}
         run: chmod +x mvnw && ./mvnw -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=EyaHermi2025_event_service -Dsonar.organization=eyahermi2025
