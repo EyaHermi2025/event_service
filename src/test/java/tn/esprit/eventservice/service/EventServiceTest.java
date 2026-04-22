@@ -145,10 +145,6 @@ class EventServiceTest {
         when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
         when(eventRegistrationRepository.existsByEventIdAndUserId(1L, 100L)).thenReturn(false);
         
-        EventRegistration savedReg = EventRegistration.builder()
-                .id(11L)
-                .status(RegistrationStatus.WAITLISTED)
-                .build();
         when(eventRegistrationRepository.save(any(EventRegistration.class))).thenAnswer(invocation -> {
             EventRegistration arg = invocation.getArgument(0);
             arg.setId(11L);

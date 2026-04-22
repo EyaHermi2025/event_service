@@ -29,6 +29,17 @@
     <properties>
         <java.version>17</java.version>
         <spring-cloud.version>2023.0.1</spring-cloud.version>
+        <sonar.projectKey>HermiEya_event_service</sonar.projectKey>
+        <sonar.organization>hermieya</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.coverage.exclusions>
+            **/tn/esprit/eventservice/entity/**,
+            **/tn/esprit/eventservice/dto/**,
+            **/tn/esprit/eventservice/exception/**,
+            **/tn/esprit/eventservice/config/**,
+            **/tn/esprit/eventservice/security/**,
+            **/tn/esprit/eventservice/EventServiceApplication.java
+        </sonar.coverage.exclusions>
     </properties>
     <dependencies>
         <dependency>

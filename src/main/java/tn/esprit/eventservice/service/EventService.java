@@ -371,10 +371,9 @@ public class EventService {
     private void validateEventDatesOnUpdate(Event newDetails, Event existingEvent) {
         basicDateCheck(newDetails);
 
-        if (!newDetails.getStartDate().equals(existingEvent.getStartDate())) {
-            if (newDetails.getStartDate().isBefore(LocalDateTime.now().minusMinutes(5))) {
-                throw new BadRequestException("New start date must be today or in the future.");
-            }
+        if (!newDetails.getStartDate().equals(existingEvent.getStartDate()) &&
+                newDetails.getStartDate().isBefore(LocalDateTime.now().minusMinutes(5))) {
+            throw new BadRequestException("New start date must be today or in the future.");
         }
     }
 
