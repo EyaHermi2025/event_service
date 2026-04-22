@@ -13,11 +13,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
-import tn.esprit.eventservice.entity.Event;
-import tn.esprit.eventservice.entity.EventRegistration;
-import tn.esprit.eventservice.entity.EventType;
-import tn.esprit.eventservice.entity.RegistrationStatus;
-import tn.esprit.eventservice.dto.EventRegistrationDto;
+import tn.esprit.eventservice.entity.*;
+import tn.esprit.eventservice.dto.*;
 import tn.esprit.eventservice.repository.EventPhysicalSpaceRepository;
 import tn.esprit.eventservice.repository.EventRegistrationRepository;
 import tn.esprit.eventservice.repository.EventRepository;
@@ -156,16 +153,18 @@ class EventServiceTest {
         assertEquals(RegistrationStatus.WAITLISTED, result.getStatus());
         assertEquals(0, testEvent.getMaxParticipants());
         verify(eventRepository, never()).save(testEvent);
+    }
+
     @Test
     void testGetGlobalStats_Success() {
         EventRegistration reg = EventRegistration.builder()
                 .eventId(1L)
                 .status(RegistrationStatus.CONFIRMED)
                 .attended(true)
-                .discoverySource(DiscoverySource.SOCIAL_MEDIA)
+                .discoverySource(DiscoverySource.FACEBOOK)
                 .gender(Gender.FEMALE)
                 .specialty("IT")
-                .paymentMethod(PaymentMethod.ONLINE)
+                .paymentMethod(PaymentMethod.CARD)
                 .participationMode("PRESENTIAL")
                 .build();
 
@@ -190,7 +189,7 @@ class EventServiceTest {
         BudgetStatsDTO stats = eventService.getBudgetStats();
 
         assertNotNull(stats);
-        assertEquals(100.0, stats.getTotalBudget());
-        assertEquals(1, stats.getActiveEvents());
+        assertEquals(100.0, stats.getTotalEstimatedCost());
+        assertEquals(1, stats.getActiveEventsCount());
     }
 }
