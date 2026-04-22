@@ -5,6 +5,7 @@ import java.util.Map;
 
 public class EventStatsDTO {
     private long totalInscribed;
+    private long confirmedCount;
     private long totalAttended;
     private double attendanceRate;
     private double averageRating;
@@ -22,11 +23,12 @@ public class EventStatsDTO {
     public EventStatsDTO() {
     }
 
-    public EventStatsDTO(long totalInscribed, long totalAttended, double attendanceRate, double averageRating,
+    public EventStatsDTO(long totalInscribed, long confirmedCount, long totalAttended, double attendanceRate, double averageRating,
             Map<String, Long> discoverySourceDistribution, Map<String, Long> genderDistribution,
             Map<String, Long> specialtyDistribution, Map<String, Long> paymentMethodDistribution,
             Map<String, Long> participationModeDistribution) {
         this.totalInscribed = totalInscribed;
+        this.confirmedCount = confirmedCount;
         this.totalAttended = totalAttended;
         this.attendanceRate = attendanceRate;
         this.averageRating = averageRating;
@@ -43,6 +45,14 @@ public class EventStatsDTO {
 
     public void setTotalInscribed(long totalInscribed) {
         this.totalInscribed = totalInscribed;
+    }
+
+    public long getConfirmedCount() {
+        return confirmedCount;
+    }
+
+    public void setConfirmedCount(long confirmedCount) {
+        this.confirmedCount = confirmedCount;
     }
 
     public long getTotalAttended() {

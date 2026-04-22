@@ -20,6 +20,9 @@ public class EventRegistration {
     @Column(name = "user_email", nullable = false)
     private String userEmail;
 
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(name = "registration_date", nullable = false)
     private LocalDateTime registrationDate;
 
@@ -60,13 +63,22 @@ public class EventRegistration {
     @Column(name = "age")
     private Integer age;
 
+    @Column(name = "seat_number")
+    private String seatNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonProperty("status")
+    private RegistrationStatus status = RegistrationStatus.CONFIRMED;
+
     public EventRegistration() {
     }
 
-    public EventRegistration(Long eventId, String userName, String userEmail, LocalDateTime registrationDate) {
+    public EventRegistration(Long eventId, String userName, String userEmail, Long userId, LocalDateTime registrationDate) {
         this.eventId = eventId;
         this.userName = userName;
         this.userEmail = userEmail;
+        this.userId = userId;
         this.registrationDate = registrationDate;
     }
 
@@ -100,6 +112,14 @@ public class EventRegistration {
 
     public void setUserEmail(String userEmail) {
         this.userEmail = userEmail;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public LocalDateTime getRegistrationDate() {
@@ -196,6 +216,22 @@ public class EventRegistration {
 
     public void setAge(Integer age) {
         this.age = age;
+    }
+
+    public String getSeatNumber() {
+        return seatNumber;
+    }
+
+    public void setSeatNumber(String seatNumber) {
+        this.seatNumber = seatNumber;
+    }
+
+    public RegistrationStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(RegistrationStatus status) {
+        this.status = status;
     }
 
 }

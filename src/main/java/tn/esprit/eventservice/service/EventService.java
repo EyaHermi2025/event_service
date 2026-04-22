@@ -12,6 +12,7 @@ import tn.esprit.eventservice.repository.EventPhysicalSpaceRepository;
 import tn.esprit.eventservice.repository.EventRepository;
 
 import tn.esprit.eventservice.entity.EventRegistration;
+import tn.esprit.eventservice.entity.RegistrationStatus;
 import tn.esprit.eventservice.dto.EventRegistrationDto;
 import tn.esprit.eventservice.repository.EventRegistrationRepository;
 
@@ -22,7 +23,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import tn.esprit.eventservice.dto.EventStatsDTO;
 import tn.esprit.eventservice.exception.BadRequestException;
-import tn.esprit.eventservice.exception.ResourceNotFoundException;
 
 @Service
 public class EventService {
@@ -34,7 +34,8 @@ public class EventService {
     private final SimpMessagingTemplate messagingTemplate;
     private final TicketService ticketService;
 
-    public EventService(EventRepository eventRepository, EventPhysicalSpaceRepository eventPhysicalSpaceRepository,
+    public EventService(EventRepository eventRepository,
+            EventPhysicalSpaceRepository eventPhysicalSpaceRepository,
             EventRegistrationRepository eventRegistrationRepository,
             tn.esprit.eventservice.client.ClubClient clubClient,
             SimpMessagingTemplate messagingTemplate,
@@ -106,8 +107,6 @@ public class EventService {
         existingEvent.setMaxParticipants(details.getMaxParticipants());
         existingEvent.setStatus(details.getStatus());
         existingEvent.setClubId(details.getClubId());
-        // note: estimatedCost update not originally handled here, but if it is updated,
-        // we would broadcast anyway
 
         eventRepository.save(existingEvent);
         eventPhysicalSpaceRepository.deleteByEventId(id);
@@ -133,6 +132,16 @@ public class EventService {
         broadcastBudgetUpdate();
     }
 
+    @org.springframework.context.event.EventListener
+    public void handleWebSocketSubscribeListener(org.springframework.web.socket.messaging.SessionSubscribeEvent event) {
+        org.springframework.messaging.simp.stomp.StompHeaderAccessor headerAccessor = org.springframework.messaging.simp.stomp.StompHeaderAccessor
+                .wrap(event.getMessage());
+        if ("/topic/budget-stats".equals(headerAccessor.getDestination())) {
+            // When a client connects, broadcast current stats immediately to them!
+            broadcastBudgetUpdate();
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<Event> findByClubId(Long clubId) {
         return eventRepository.findByClubId(clubId);
@@ -148,35 +157,47 @@ public class EventService {
         return eventRepository.findByType(type);
     }
 
-    @Transactional(readOnly = true)
-    public List<Long> getPhysicalSpaceIdsByEventId(Long eventId) {
-        return eventPhysicalSpaceRepository.findByEventId(eventId).stream()
-                .map(EventPhysicalSpace::getPhysicalSpaceId)
-                .collect(Collectors.toList());
-    }
-
     @Transactional
     public EventRegistration registerForEvent(Long eventId, EventRegistrationDto dto) {
-        if (!eventRepository.existsById(eventId)) {
-            throw new ResourceNotFoundException("Event", eventId);
+        if (dto.getUserId() != null && eventRegistrationRepository.existsByEventIdAndUserId(eventId, dto.getUserId())) {
+            throw new BadRequestException("You are already registered for this event.");
         }
+
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Event", eventId));
+
+        RegistrationStatus status;
+        
+        // Logical check based strictly on the Capacity Limit field value
+        if (event.getMaxParticipants() != null && event.getMaxParticipants() > 0) {
+            // Success: Stable decrement of the counter
+            event.setMaxParticipants(event.getMaxParticipants() - 1);
+            status = RegistrationStatus.CONFIRMED;
+            eventRepository.save(event); // Persist the new capacity
+        } else {
+            // Capacity is 0: Send to waitlist
+            status = RegistrationStatus.WAITLISTED;
+        }
+
         EventRegistration registration = new EventRegistration(
                 eventId,
                 dto.getUserName(),
                 dto.getUserEmail(),
+                dto.getUserId(),
                 LocalDateTime.now());
+        
+        registration.setStatus(status);
         registration.setDiscoverySource(dto.getDiscoverySource());
         registration.setGender(dto.getGender());
         registration.setReason(dto.getReason());
         registration.setLevel(dto.getLevel());
         registration.setHobbies(dto.getHobbies());
         registration.setPaymentMethod(dto.getPaymentMethod());
+        registration.setSeatNumber(dto.getSeatNumber());
 
         EventRegistration saved = eventRegistrationRepository.save(registration);
 
-        // Trigger Ticket Generation and Email (Async)
-        Event event = eventRepository.findById(eventId).orElse(null);
-        if (event != null) {
+        if (status == RegistrationStatus.CONFIRMED) {
             ticketService.generateAndSendTicket(event, saved);
         }
 
@@ -185,30 +206,50 @@ public class EventService {
     }
 
     @Transactional
-    public void checkInStudent(String token) {
-        // Token format: REG-{id}
-        if (!token.startsWith("REG-")) {
-            throw new BadRequestException("Invalid ticket format.");
-        }
-
-        try {
-            Long registrationId = Long.parseLong(token.substring(4));
-            EventRegistration registration = eventRegistrationRepository.findById(registrationId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Registration", registrationId));
-
-            if (registration.isAttended()) {
-                throw new BadRequestException("This student is already checked in.");
+    public void cancelRegistration(Long registrationId) {
+        EventRegistration reg = eventRegistrationRepository.findById(registrationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Registration", registrationId));
+        
+        Long eventId = reg.getEventId();
+        RegistrationStatus oldStatus = reg.getStatus();
+        
+        eventRegistrationRepository.delete(reg);
+        
+        if (oldStatus == RegistrationStatus.CONFIRMED) {
+            List<EventRegistration> waitlist = eventRegistrationRepository
+                    .findByEventIdAndStatusOrderByRegistrationDateAsc(eventId, RegistrationStatus.WAITLISTED);
+            
+            if (!waitlist.isEmpty()) {
+                EventRegistration next = waitlist.get(0);
+                next.setStatus(RegistrationStatus.CONFIRMED);
+                eventRegistrationRepository.save(next);
+                
+                Event event = eventRepository.findById(eventId).orElse(null);
+                if (event != null) {
+                    ticketService.generateAndSendTicket(event, next);
+                }
             }
-
-            registration.setAttended(true);
-            eventRegistrationRepository.save(registration);
-
-            // Broadcast update to real-time dashboard
-            broadcastEventStats(registration.getEventId());
-
-        } catch (NumberFormatException e) {
-            throw new BadRequestException("Invalid ticket token.");
         }
+        broadcastEventStats(eventId);
+    }
+
+    @Transactional
+    public void promoteFromWaitlist(Long registrationId) {
+        EventRegistration reg = eventRegistrationRepository.findById(registrationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Registration", registrationId));
+        
+        if (reg.getStatus() != RegistrationStatus.WAITLISTED) {
+            throw new BadRequestException("Registration is not on waitlist.");
+        }
+        
+        reg.setStatus(RegistrationStatus.CONFIRMED);
+        eventRegistrationRepository.save(reg);
+        
+        Event event = eventRepository.findById(reg.getEventId()).orElse(null);
+        if (event != null) {
+            ticketService.generateAndSendTicket(event, reg);
+        }
+        broadcastEventStats(reg.getEventId());
     }
 
     public EventStatsDTO getEventStats(Long eventId) {
@@ -220,7 +261,6 @@ public class EventService {
         List<EventRegistration> registrations = eventRegistrationRepository.findAll();
         EventStatsDTO stats = calculateStats(registrations);
 
-        // Compute top 5 events by registration count
         Map<Long, Long> countsByEventId = registrations.stream()
                 .collect(Collectors.groupingBy(EventRegistration::getEventId, Collectors.counting()));
 
@@ -241,10 +281,11 @@ public class EventService {
 
     private EventStatsDTO calculateStats(List<EventRegistration> registrations) {
         if (registrations.isEmpty()) {
-            return new EventStatsDTO(0L, 0L, 0.0, 0.0, Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+            return new EventStatsDTO(0L, 0L, 0L, 0.0, 0.0, Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
         }
 
         long totalInscribed = registrations.size();
+        long confirmedCount = registrations.stream().filter(r -> r.getStatus() == RegistrationStatus.CONFIRMED).count();
         long totalAttended = registrations.stream().filter(EventRegistration::isAttended).count();
         double attendanceRate = (double) totalAttended / totalInscribed * 100;
         double averageRating = registrations.stream()
@@ -272,15 +313,34 @@ public class EventService {
                 .filter(r -> r.getParticipationMode() != null && !r.getParticipationMode().isEmpty())
                 .collect(Collectors.groupingBy(EventRegistration::getParticipationMode, Collectors.counting()));
 
-        return new EventStatsDTO(totalInscribed, totalAttended, attendanceRate, averageRating,
+        return new EventStatsDTO(totalInscribed, confirmedCount, totalAttended, attendanceRate, averageRating,
                 discovery, genders, specialties, payments, modes);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<EventRegistration> getRegistrationById(Long id) {
+        return eventRegistrationRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isUserRegistered(Long eventId, Long userId) {
+        return eventRegistrationRepository.existsByEventIdAndUserId(eventId, userId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EventRegistration> getUserRegistrations(Long userId) {
+        return eventRegistrationRepository.findByUserId(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EventRegistration> getRegistrationsByEventAndStatus(Long eventId, RegistrationStatus status) {
+        return eventRegistrationRepository.findByEventIdAndStatusOrderByRegistrationDateAsc(eventId, status);
     }
 
     public void broadcastEventStats(Long eventId) {
         EventStatsDTO stats = getEventStats(eventId);
         messagingTemplate.convertAndSend("/topic/event-stats/" + eventId, stats);
 
-        // Also broadcast global stats
         EventStatsDTO globalStats = getGlobalStats();
         messagingTemplate.convertAndSend("/topic/event-stats/global", globalStats);
     }

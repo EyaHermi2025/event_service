@@ -38,59 +38,21 @@ public class EventController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/budget-stats")
-    public ResponseEntity<tn.esprit.eventservice.dto.BudgetStatsDTO> getBudgetStats() {
-        return ResponseEntity.ok(eventService.getBudgetStats());
-    }
-
-    @GetMapping("/stats/global")
-    public ResponseEntity<EventStatsDTO> getGlobalStats() {
-        return ResponseEntity.ok(eventService.getGlobalStats());
-    }
-
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody Event event,
-            @RequestParam(value = "physicalSpaceIds", required = false) List<Long> physicalSpaceIds) {
+    public ResponseEntity<?> create(@Valid @RequestBody Event event) {
         try {
-            Event created = eventService.create(event, physicalSpaceIds);
+            Event created = eventService.create(event, null);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
-        } catch (feign.FeignException e) {
-            e.printStackTrace();
-            java.util.Map<String, String> errorDetails = new java.util.HashMap<>();
-            String content = e.contentUTF8();
-            String errorMessage = "Insufficient budget or remote service error";
-
-            if (content != null && !content.isEmpty()) {
-                try {
-                    com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper()
-                            .readTree(content);
-                    if (node.has("message") && !node.get("message").asText().isEmpty()) {
-                        errorMessage = node.get("message").asText();
-                    } else if (node.has("error") && !node.get("error").asText().isEmpty()) {
-                        errorMessage = node.get("error").asText();
-                    }
-                } catch (Exception ex) {
-                    errorMessage = e.getMessage().replaceAll("http://[^/]+", "API");
-                }
-            }
-
-            errorDetails.put("error", errorMessage);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDetails);
         } catch (Exception e) {
-            e.printStackTrace();
             java.util.Map<String, String> errorDetails = new java.util.HashMap<>();
-            String message = e.getMessage() != null ? e.getMessage() : "An unexpected error occurred";
-            // Remove localhost or IP addresses from the message
-            message = message.replaceAll("http://[^/ ]+", "the server");
-            errorDetails.put("error", message);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorDetails);
+            errorDetails.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDetails);
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Event> update(@PathVariable("id") Long id, @Valid @RequestBody Event event,
-            @RequestParam(value = "physicalSpaceIds", required = false) List<Long> physicalSpaceIds) {
-        Event updated = eventService.update(id, event, physicalSpaceIds);
+    public ResponseEntity<Event> update(@PathVariable("id") Long id, @Valid @RequestBody Event event) {
+        Event updated = eventService.update(id, event, null);
         return ResponseEntity.ok(updated);
     }
 
@@ -98,26 +60,6 @@ public class EventController {
     public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
         eventService.deleteById(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/club/{clubId}")
-    public ResponseEntity<List<Event>> getByClubId(@PathVariable("clubId") Long clubId) {
-        return ResponseEntity.ok(eventService.findByClubId(clubId));
-    }
-
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<Event>> getByStatus(@PathVariable("status") String status) {
-        return ResponseEntity.ok(eventService.findByStatus(status));
-    }
-
-    @GetMapping("/type/{type}")
-    public ResponseEntity<List<Event>> getByType(@PathVariable("type") EventType type) {
-        return ResponseEntity.ok(eventService.findByType(type));
-    }
-
-    @GetMapping("/{id}/physical-space-ids")
-    public ResponseEntity<List<Long>> getPhysicalSpaceIds(@PathVariable("id") Long id) {
-        return ResponseEntity.ok(eventService.getPhysicalSpaceIdsByEventId(id));
     }
 
     @PostMapping("/{id}/register")
@@ -128,9 +70,19 @@ public class EventController {
             return ResponseEntity.status(HttpStatus.CREATED).body(registration);
         } catch (Exception e) {
             java.util.Map<String, String> errorDetails = new java.util.HashMap<>();
-            errorDetails.put("error", e.getMessage() != null ? e.getMessage() : "Failed to register for the event");
+            errorDetails.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDetails);
         }
+    }
+
+    @GetMapping("/{id}/is-registered")
+    public ResponseEntity<Boolean> checkIfRegistered(@PathVariable("id") Long id, @RequestParam("userId") Long userId) {
+        return ResponseEntity.ok(eventService.isUserRegistered(id, userId));
+    }
+
+    @GetMapping("/my-registrations")
+    public ResponseEntity<List<EventRegistration>> getUserRegistrations(@RequestParam("userId") Long userId) {
+        return ResponseEntity.ok(eventService.getUserRegistrations(userId));
     }
 
     @GetMapping("/{id}/stats")
@@ -138,17 +90,37 @@ public class EventController {
         return ResponseEntity.ok(eventService.getEventStats(id));
     }
 
-    @PostMapping("/registrations/checkin/{token}")
-    public ResponseEntity<?> checkIn(@PathVariable("token") String token) {
-        try {
-            eventService.checkInStudent(token);
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Check-in successful!");
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
+    @GetMapping("/stats/global")
+    public ResponseEntity<EventStatsDTO> getGlobalStats() {
+        return ResponseEntity.ok(eventService.getGlobalStats());
+    }
+
+    @GetMapping("/budget")
+    public ResponseEntity<tn.esprit.eventservice.dto.BudgetStatsDTO> getBudgetStats() {
+        return ResponseEntity.ok(eventService.getBudgetStats());
+    }
+
+    @GetMapping("/registrations/{id}")
+    public ResponseEntity<EventRegistration> getRegistrationById(@PathVariable("id") Long id) {
+        return eventService.getRegistrationById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/registrations/{id}")
+    public ResponseEntity<Void> cancelRegistration(@PathVariable("id") Long id) {
+        eventService.cancelRegistration(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/waitlist")
+    public ResponseEntity<List<EventRegistration>> getWaitlist(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(eventService.getRegistrationsByEventAndStatus(id, tn.esprit.eventservice.entity.RegistrationStatus.WAITLISTED));
+    }
+
+    @PostMapping("/registrations/{id}/promote")
+    public ResponseEntity<Void> promoteFromWaitlist(@PathVariable("id") Long id) {
+        eventService.promoteFromWaitlist(id);
+        return ResponseEntity.ok().build();
     }
 }

@@ -23,14 +23,8 @@ public class TicketService {
 
     public void generateAndSendTicket(Event event, EventRegistration registration) {
         try {
-            // 1. Generate QR Code containing event details
-            String payment = registration.getPaymentMethod() != null ? registration.getPaymentMethod().name() : "N/A";
-            String level = registration.getLevel() != null ? registration.getLevel() : "N/A";
-            String qrData = "Événement : " + event.getTitle() + "\n" +
-                    "Participant : " + registration.getUserName() + "\n" +
-                    "Ticket N° : REG-" + registration.getId() + "\n" +
-                    "Statut : Confirmé (" + payment + ")\n" +
-                    "Niveau : " + level;
+            // 1. Generate QR Code containing verification link with seat info
+            String qrData = "http://localhost:4200/verify-ticket/" + registration.getId() + "?seat=" + registration.getSeatNumber();
             byte[] qrCodeImage = qrCodeService.generateQRCodeImage(qrData, 200, 200);
 
             // 2. Generate PDF Ticket
@@ -83,6 +77,7 @@ public class TicketService {
         document.add(new Paragraph("EMAIL: " + registration.getUserEmail(), valueFont));
         document.add(new Paragraph("DATE: " + (event.getStartDate() != null ? event.getStartDate().toString() : "TBD"),
                 valueFont));
+        document.add(new Paragraph("SEAT: " + (registration.getSeatNumber() != null ? registration.getSeatNumber() : "GENERAL ADMISSION"), labelFont));
         document.add(new Paragraph("LOCATION: Consult SchoolPlatform", valueFont));
 
         document.add(new Paragraph("\n"));
