@@ -27,8 +27,8 @@ class BoilerplateCoverageTest {
         assertEquals("Test", event.getTitle());
         assertNotNull(event.toString());
         assertNotEquals(0, event.hashCode());
-        assertTrue(event.equals(event));
-        assertFalse(event.equals(null));
+        assertEquals(event, event);
+        assertNotEquals(null, event);
 
         // EventRegistration
         EventRegistration reg = EventRegistration.builder()

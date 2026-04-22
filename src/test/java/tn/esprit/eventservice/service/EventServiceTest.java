@@ -156,5 +156,41 @@ class EventServiceTest {
         assertEquals(RegistrationStatus.WAITLISTED, result.getStatus());
         assertEquals(0, testEvent.getMaxParticipants());
         verify(eventRepository, never()).save(testEvent);
+    @Test
+    void testGetGlobalStats_Success() {
+        EventRegistration reg = EventRegistration.builder()
+                .eventId(1L)
+                .status(RegistrationStatus.CONFIRMED)
+                .attended(true)
+                .discoverySource(DiscoverySource.SOCIAL_MEDIA)
+                .gender(Gender.FEMALE)
+                .specialty("IT")
+                .paymentMethod(PaymentMethod.ONLINE)
+                .participationMode("PRESENTIAL")
+                .build();
+
+        when(eventRegistrationRepository.findAll()).thenReturn(java.util.Arrays.asList(reg));
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+
+        EventStatsDTO stats = eventService.getGlobalStats();
+
+        assertNotNull(stats);
+        assertEquals(1, stats.getTotalInscribed());
+        assertEquals(1, stats.getConfirmedCount());
+        assertEquals(100.0, stats.getAttendanceRate());
+        assertFalse(stats.getTopEvents().isEmpty());
+        assertEquals("Test Workshop", stats.getTopEvents().get(0).getTitle());
+    }
+
+    @Test
+    void testGetBudgetStats_Success() {
+        when(eventRepository.findAll()).thenReturn(java.util.Arrays.asList(testEvent));
+        when(eventRepository.count()).thenReturn(1L);
+
+        BudgetStatsDTO stats = eventService.getBudgetStats();
+
+        assertNotNull(stats);
+        assertEquals(100.0, stats.getTotalBudget());
+        assertEquals(1, stats.getActiveEvents());
     }
 }
