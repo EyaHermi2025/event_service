@@ -27,7 +27,13 @@ class BoilerplateCoverageTest {
         assertEquals("Test", event.getTitle());
         assertNotNull(event.toString());
         assertNotEquals(0, event.hashCode());
-        Event sameEvent = Event.builder().id(1L).title("Test").build();
+        Event sameEvent = Event.builder()
+                .id(1L)
+                .title("Test")
+                .type(EventType.WORKSHOP)
+                .startDate(event.getStartDate())
+                .status("ACTIVE")
+                .build();
         assertEquals(event, sameEvent);
         assertNotEquals(null, event);
 
