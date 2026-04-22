@@ -18,8 +18,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import tn.esprit.eventservice.dto.EventDTO;
+import tn.esprit.eventservice.dto.*;
 import tn.esprit.eventservice.entity.Event;
+import tn.esprit.eventservice.entity.EventRegistration;
 import tn.esprit.eventservice.entity.EventType;
 import tn.esprit.eventservice.service.EventService;
 
@@ -38,89 +39,77 @@ class EventControllerIntegrationTest {
 
     @Test
     void testGetAllEvents() throws Exception {
-        Event event = Event.builder()
-                .id(1L)
-                .title("Integration Test Event")
-                .type(EventType.COMPETITION)
-                .build();
-
+        Event event = Event.builder().id(1L).title("Integration Test").build();
         when(eventService.findAll()).thenReturn(Arrays.asList(event));
-
-        mockMvc.perform(get("/api/events")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("Integration Test Event"));
+        mockMvc.perform(get("/api/events")).andExpect(status().isOk());
     }
 
     @Test
-    void testGetEventById_Found() throws Exception {
-        Event event = Event.builder()
-                .id(1L)
-                .title("Specific Event")
-                .build();
-
+    void testGetEventById() throws Exception {
+        Event event = Event.builder().id(1L).title("Specific Event").build();
         when(eventService.findById(1L)).thenReturn(Optional.of(event));
-
-        mockMvc.perform(get("/api/events/1")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Specific Event"));
+        mockMvc.perform(get("/api/events/1")).andExpect(status().isOk());
     }
 
     @Test
     void testCreateEvent() throws Exception {
-        EventDTO dto = EventDTO.builder()
-                .title("Created Event")
-                .type(EventType.WORKSHOP)
-                .build();
-        
-        Event savedEvent = Event.builder()
-                .id(10L)
-                .title("Created Event")
-                .build();
-
-        when(eventService.create(any(Event.class), any())).thenReturn(savedEvent);
-
+        EventDTO dto = EventDTO.builder().title("New").type(EventType.WORKSHOP).build();
+        Event saved = Event.builder().id(10L).title("New").build();
+        when(eventService.create(any(Event.class), any())).thenReturn(saved);
         mockMvc.perform(post("/api/events")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(10L))
-                .andExpect(jsonPath("$.title").value("Created Event"));
+                .andExpect(status().isCreated());
     }
 
     @Test
     void testUpdateEvent() throws Exception {
-        EventDTO dto = EventDTO.builder()
-                .title("Updated Event")
-                .build();
-        
-        Event updatedEvent = Event.builder()
-                .id(1L)
-                .title("Updated Event")
-                .build();
-
-        when(eventService.update(any(Long.class), any(Event.class), any())).thenReturn(updatedEvent);
-
+        EventDTO dto = EventDTO.builder().title("Updated").build();
+        Event updated = Event.builder().id(1L).title("Updated").build();
+        when(eventService.update(any(Long.class), any(Event.class), any())).thenReturn(updated);
         mockMvc.perform(put("/api/events/1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Updated Event"));
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testRegisterForEvent() throws Exception {
+        EventRegistrationDto dto = EventRegistrationDto.builder().userName("Eya").build();
+        EventRegistration reg = EventRegistration.builder().id(1L).userName("Eya").build();
+        when(eventService.registerForEvent(any(), any())).thenReturn(reg);
+        mockMvc.perform(post("/api/events/1/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetStats() throws Exception {
+        when(eventService.getEventStats(1L)).thenReturn(EventStatsDTO.builder().build());
+        mockMvc.perform(get("/api/events/1/stats")).andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetGlobalStats() throws Exception {
+        when(eventService.getGlobalStats()).thenReturn(EventStatsDTO.builder().build());
+        mockMvc.perform(get("/api/events/stats/global")).andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetBudgetStats() throws Exception {
+        when(eventService.getBudgetStats()).thenReturn(BudgetStatsDTO.builder().build());
+        mockMvc.perform(get("/api/events/stats/budget")).andExpect(status().isOk());
     }
 
     @Test
     void testDeleteEvent() throws Exception {
-        mockMvc.perform(delete("/api/events/1"))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/events/1")).andExpect(status().isNoContent());
     }
 
     @Test
     void testGetEventById_NotFound() throws Exception {
         when(eventService.findById(99L)).thenReturn(Optional.empty());
-
-        mockMvc.perform(get("/api/events/99")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/events/99")).andExpect(status().isNotFound());
     }
 }

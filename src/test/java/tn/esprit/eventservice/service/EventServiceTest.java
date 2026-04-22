@@ -192,4 +192,61 @@ class EventServiceTest {
         assertEquals(100.0, stats.getTotalEstimatedCost());
         assertEquals(1, stats.getActiveEventsCount());
     }
+
+    @Test
+    void testRegisterForEvent_AlreadyRegistered() {
+        when(eventRegistrationRepository.existsByEventIdAndUserId(1L, 100L)).thenReturn(true);
+
+        assertThrows(tn.esprit.eventservice.exception.BadRequestException.class, () -> {
+            eventService.registerForEvent(1L, mockDto);
+        });
+    }
+
+    @Test
+    void testGetEventStats_Success() {
+        when(eventRegistrationRepository.findByEventId(1L)).thenReturn(java.util.Collections.emptyList());
+        
+        EventStatsDTO stats = eventService.getEventStats(1L);
+        
+        assertNotNull(stats);
+        assertEquals(0, stats.getTotalInscribed());
+    }
+
+    @Test
+    void testCancelRegistration_Success() {
+        EventRegistration reg = EventRegistration.builder()
+                .id(1L)
+                .eventId(1L)
+                .status(RegistrationStatus.CONFIRMED)
+                .build();
+        
+        when(eventRegistrationRepository.findById(1L)).thenReturn(Optional.of(reg));
+        when(eventRegistrationRepository.findByEventIdAndStatusOrderByRegistrationDateAsc(1L, RegistrationStatus.WAITLISTED))
+                .thenReturn(java.util.Collections.emptyList());
+        when(eventRegistrationRepository.findByEventId(1L)).thenReturn(java.util.Collections.emptyList());
+        when(eventRegistrationRepository.findAll()).thenReturn(java.util.Collections.emptyList());
+
+        eventService.cancelRegistration(1L);
+
+        verify(eventRegistrationRepository, times(1)).delete(reg);
+        verify(messagingTemplate, atLeastOnce()).convertAndSend(anyString(), any(Object.class));
+    }
+
+    @Test
+    void testPromoteFromWaitlist_Success() {
+        EventRegistration reg = EventRegistration.builder()
+                .id(1L)
+                .eventId(1L)
+                .status(RegistrationStatus.WAITLISTED)
+                .build();
+        
+        when(eventRegistrationRepository.findById(1L)).thenReturn(Optional.of(reg));
+        when(eventRegistrationRepository.findByEventId(1L)).thenReturn(java.util.Collections.emptyList());
+        when(eventRegistrationRepository.findAll()).thenReturn(java.util.Collections.emptyList());
+
+        eventService.promoteFromWaitlist(1L);
+
+        assertEquals(RegistrationStatus.CONFIRMED, reg.getStatus());
+        verify(eventRegistrationRepository, times(1)).save(reg);
+    }
 }
