@@ -20,7 +20,7 @@ class GlobalExceptionHandlerTest {
         
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertTrue(response.getBody().containsKey("error"));
-        assertEquals("Event with id 1 not found", response.getBody().get("error"));
+        assertEquals("Event not found with id: 1", response.getBody().get("error"));
     }
 
     @Test
