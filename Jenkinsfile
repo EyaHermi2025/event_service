@@ -8,8 +8,8 @@ pipeline {
     environment {
         DOCKER_HUB_USER = 'eyahermi2025'
         IMAGE_NAME = 'event-service'
-        PROJECT_KEY = 'EyaHermi2025_event-service' // Vérifie si c'est bien ta clé
-        ORG_KEY = 'eyahermi2025'
+        PROJECT_KEY = 'EyaHermi2025_event_service'
+        DB_URL = 'jdbc:mysql://host.docker.internal:3306/event_service_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true'
     }
 
     stages {
@@ -21,7 +21,7 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                sh 'mvn clean verify'
+                sh "mvn clean verify -Dspring.datasource.url=${DB_URL}"
             }
         }
 
