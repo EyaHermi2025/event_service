@@ -21,7 +21,7 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                sh "mvn clean verify '-Dspring.datasource.url=${DB_URL}'"
+                sh "mvn clean verify '-Dspring.datasource.url=${DB_URL}' -Deureka.client.enabled=false"
             }
         }
 
