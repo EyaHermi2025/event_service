@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'maven-3'
+    }
+
     environment {
         DOCKER_HUB_USER = 'eyahermi2025'
         IMAGE_NAME = 'event-service'
