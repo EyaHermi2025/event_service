@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        DOCKER_HUB_USER = 'eyahermi2025'
+        DOCKER_HUB_USER = 'eyaeyahermi'
         IMAGE_NAME = 'event-service'
         PROJECT_KEY = 'EyaHermi2025_event_service'
         DB_URL = 'jdbc:mysql://host.docker.internal:3306/event_service_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true'
