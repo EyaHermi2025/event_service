@@ -18,6 +18,11 @@ spec:
         image: ${DOCKER_HUB_USER}/event-service:latest
         ports:
         - containerPort: 8081
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:mysql://host.docker.internal:3306/event_service_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false"
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://host.docker.internal:8761/eureka/"
 ---
 apiVersion: v1
 kind: Service
