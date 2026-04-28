@@ -1,0 +1,24 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_HUB_USER = 'eyaeyahermi'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Kubernetes Deployment') {
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig-id']) {
+                    sh "sed -i 's/\\${DOCKER_HUB_USER}/${DOCKER_HUB_USER}/g' k8s/deployment.yaml"
+                    sh "kubectl apply -f k8s/deployment.yaml"
+                }
+            }
+        }
+    }
+}
