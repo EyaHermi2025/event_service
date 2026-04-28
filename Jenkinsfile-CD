@@ -16,7 +16,7 @@ pipeline {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig-id']) {
                     sh "sed -i 's/\\${DOCKER_HUB_USER}/${DOCKER_HUB_USER}/g' k8s/deployment.yaml"
-                    sh "kubectl apply -f k8s/deployment.yaml --validate=false"
+                    sh "kubectl apply -f k8s/deployment.yaml --insecure-skip-tls-verify=true"
                 }
             }
         }
