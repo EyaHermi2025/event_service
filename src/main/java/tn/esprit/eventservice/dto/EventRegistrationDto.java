@@ -25,4 +25,8 @@ public class EventRegistrationDto {
     private String seatNumber;
     private RegistrationStatus status;
     private Boolean attended;
+    private String specialty;
+    private String participationMode;
+    private String eventTitle;
+    private String eventType;
 }

@@ -151,6 +151,10 @@ public class EventController {
     }
 
     private EventRegistrationDto mapRegToDTO(EventRegistration reg) {
+        EventDTO event = eventService.findById(reg.getEventId())
+                .map(this::mapToDTO)
+                .orElse(null);
+
         return EventRegistrationDto.builder()
                 .id(reg.getId())
                 .eventId(reg.getEventId())
@@ -167,6 +171,10 @@ public class EventController {
                 .seatNumber(reg.getSeatNumber())
                 .status(reg.getStatus())
                 .attended(reg.getAttended())
+                .specialty(reg.getSpecialty())
+                .participationMode(reg.getParticipationMode())
+                .eventTitle(event != null ? event.getTitle() : "Unknown Event")
+                .eventType(event != null && event.getType() != null ? event.getType().name() : "Other")
                 .build();
     }
 }

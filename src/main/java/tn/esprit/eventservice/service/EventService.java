@@ -193,6 +193,8 @@ public class EventService {
                 .hobbies(dto.getHobbies())
                 .paymentMethod(dto.getPaymentMethod())
                 .seatNumber(dto.getSeatNumber())
+                .specialty(dto.getSpecialty()) // FIXED: Added specialty here
+                .participationMode(dto.getParticipationMode()) // Added participation mode
                 .build();
 
         EventRegistration saved = eventRegistrationRepository.save(registration);
@@ -262,6 +264,7 @@ public class EventService {
         EventStatsDTO stats = calculateStats(registrations);
 
         Map<Long, Long> countsByEventId = registrations.stream()
+                .filter(r -> r.getEventId() != null)
                 .collect(Collectors.groupingBy(EventRegistration::getEventId, Collectors.counting()));
 
         List<tn.esprit.eventservice.dto.TopEventDTO> topEvents = countsByEventId.entrySet().stream()
@@ -279,9 +282,15 @@ public class EventService {
         return stats;
     }
 
+
     private EventStatsDTO calculateStats(List<EventRegistration> registrations) {
-        if (registrations.isEmpty()) {
+        if (registrations == null || registrations.isEmpty()) {
             return EventStatsDTO.builder()
+                    .totalInscribed(0)
+                    .confirmedCount(0)
+                    .totalAttended(0)
+                    .attendanceRate(0.0)
+                    .averageRating(0.0)
                     .discoverySourceDistribution(Map.of())
                     .genderDistribution(Map.of())
                     .specialtyDistribution(Map.of())
@@ -291,9 +300,13 @@ public class EventService {
         }
 
         long totalInscribed = registrations.size();
-        long confirmedCount = registrations.stream().filter(r -> r.getStatus() == RegistrationStatus.CONFIRMED).count();
-        long totalAttended = registrations.stream().filter(EventRegistration::getAttended).count();
-        double attendanceRate = (double) totalAttended / totalInscribed * 100;
+        long confirmedCount = registrations.stream()
+                .filter(r -> r.getStatus() == RegistrationStatus.CONFIRMED)
+                .count();
+        long totalAttended = registrations.stream()
+                .filter(r -> r.getAttended() != null && r.getAttended())
+                .count();
+        double attendanceRate = totalInscribed > 0 ? (double) totalAttended / totalInscribed * 100 : 0.0;
         double averageRating = registrations.stream()
                 .filter(r -> r.getFeedbackRating() != null)
                 .mapToInt(EventRegistration::getFeedbackRating)
@@ -308,7 +321,7 @@ public class EventService {
                 .collect(Collectors.groupingBy(r -> r.getGender().name(), Collectors.counting()));
 
         Map<String, Long> specialties = registrations.stream()
-                .filter(r -> r.getSpecialty() != null && !r.getSpecialty().isEmpty())
+                .filter(r -> r.getSpecialty() != null && !r.getSpecialty().trim().isEmpty())
                 .collect(Collectors.groupingBy(EventRegistration::getSpecialty, Collectors.counting()));
 
         Map<String, Long> payments = registrations.stream()
@@ -316,7 +329,7 @@ public class EventService {
                 .collect(Collectors.groupingBy(r -> r.getPaymentMethod().name(), Collectors.counting()));
 
         Map<String, Long> modes = registrations.stream()
-                .filter(r -> r.getParticipationMode() != null && !r.getParticipationMode().isEmpty())
+                .filter(r -> r.getParticipationMode() != null && !r.getParticipationMode().trim().isEmpty())
                 .collect(Collectors.groupingBy(EventRegistration::getParticipationMode, Collectors.counting()));
 
         return EventStatsDTO.builder()
