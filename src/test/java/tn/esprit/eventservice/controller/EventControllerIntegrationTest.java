@@ -186,4 +186,43 @@ class EventControllerIntegrationTest {
         when(eventService.findById(999L)).thenReturn(Optional.empty());
         mockMvc.perform(get("/api/events/registrations/1")).andExpect(status().isOk());
     }
+
+    @Test
+    void testGetById_MapsNewFields() throws Exception {
+        Event event = Event.builder().id(1L).title("ML Event").type(EventType.WORKSHOP)
+                .startDate(LocalDateTime.now().plusDays(1))
+                .endDate(LocalDateTime.now().plusDays(2))
+                .clubId(1L).maxParticipants(50)
+                .difficulty("Hard")
+                .teachingStyle("Visual")
+                .efficiencyPrediction(0.88)
+                .build();
+        when(eventService.findById(1L)).thenReturn(Optional.of(event));
+        mockMvc.perform(get("/api/events/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.Difficulty").value("Hard"))
+                .andExpect(jsonPath("$.TeachingStyle").value("Visual"))
+                .andExpect(jsonPath("$.EfficiencyPrediction").value(0.88));
+    }
+
+    @Test
+    void testCreateEvent_WithNewFields() throws Exception {
+        EventDTO dto = EventDTO.builder()
+                .title("New ML Event").type(EventType.COMPETITION)
+                .startDate(LocalDateTime.now().plusDays(1))
+                .endDate(LocalDateTime.now().plusDays(2))
+                .clubId(2L).maxParticipants(30)
+                .difficulty("Medium")
+                .teachingStyle("Auditory")
+                .efficiencyPrediction(0.75)
+                .build();
+        Event saved = Event.builder().id(5L).title("New ML Event").type(EventType.COMPETITION)
+                .startDate(dto.getStartDate()).endDate(dto.getEndDate())
+                .difficulty("Medium").teachingStyle("Auditory").efficiencyPrediction(0.75).build();
+        when(eventService.create(any(Event.class), any())).thenReturn(saved);
+        mockMvc.perform(post("/api/events")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated());
+    }
 }

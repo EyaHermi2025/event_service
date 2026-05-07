@@ -234,6 +234,95 @@ class EventServiceTest {
         assertDoesNotThrow(() -> eventService.update(1L, details, null));
     }
 
+    @Test
+    void testUpdate_WithMLPrediction_Workshop() {
+        Event details = Event.builder().title("Updated").type(EventType.WORKSHOP)
+                .startDate(testEvent.getStartDate()).endDate(testEvent.getEndDate())
+                .difficulty("Easy").teachingStyle("Visual").build();
+        MLPredictionClient.PredictionResponse resp = new MLPredictionClient.PredictionResponse();
+        resp.setEfficiency_probability(0.72);
+        when(mlPredictionClient.predict(any())).thenReturn(resp);
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.save(any())).thenReturn(testEvent);
+        eventService.update(1L, details, null);
+        assertEquals(0.72, testEvent.getEfficiencyPrediction());
+    }
+
+    @Test
+    void testUpdate_WithMLPrediction_Meeting() {
+        Event details = Event.builder().title("Updated").type(EventType.MEETING)
+                .startDate(testEvent.getStartDate()).endDate(testEvent.getEndDate())
+                .difficulty("Hard").teachingStyle("Auditory").build();
+        MLPredictionClient.PredictionResponse resp = new MLPredictionClient.PredictionResponse();
+        resp.setEfficiency_probability(0.60);
+        when(mlPredictionClient.predict(any())).thenReturn(resp);
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.save(any())).thenReturn(testEvent);
+        eventService.update(1L, details, null);
+        assertEquals(0.60, testEvent.getEfficiencyPrediction());
+    }
+
+    @Test
+    void testUpdate_WithMLPrediction_Competition() {
+        Event details = Event.builder().title("Updated").type(EventType.COMPETITION)
+                .startDate(testEvent.getStartDate()).endDate(testEvent.getEndDate())
+                .difficulty("Medium").teachingStyle("Mixed").build();
+        MLPredictionClient.PredictionResponse resp = new MLPredictionClient.PredictionResponse();
+        resp.setEfficiency_probability(0.90);
+        when(mlPredictionClient.predict(any())).thenReturn(resp);
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.save(any())).thenReturn(testEvent);
+        eventService.update(1L, details, null);
+        assertEquals(0.90, testEvent.getEfficiencyPrediction());
+    }
+
+    @Test
+    void testUpdate_MLPredictionFails() {
+        Event details = Event.builder().title("Updated").type(EventType.WORKSHOP)
+                .startDate(testEvent.getStartDate()).endDate(testEvent.getEndDate())
+                .difficulty("Hard").teachingStyle("Visual").build();
+        when(mlPredictionClient.predict(any())).thenThrow(new RuntimeException("ML down"));
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.save(any())).thenReturn(testEvent);
+        assertDoesNotThrow(() -> eventService.update(1L, details, null));
+    }
+
+    @Test
+    void testUpdate_MLPredictionNullResponse() {
+        Event details = Event.builder().title("Updated").type(EventType.WORKSHOP)
+                .startDate(testEvent.getStartDate()).endDate(testEvent.getEndDate())
+                .difficulty("Easy").teachingStyle("Visual").build();
+        when(mlPredictionClient.predict(any())).thenReturn(null);
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.save(any())).thenReturn(testEvent);
+        eventService.update(1L, details, null);
+        assertNull(testEvent.getEfficiencyPrediction());
+    }
+
+    @Test
+    void testUpdate_MLPredictionSkipped_NullDifficulty() {
+        Event details = Event.builder().title("Updated").type(EventType.WORKSHOP)
+                .startDate(testEvent.getStartDate()).endDate(testEvent.getEndDate())
+                .difficulty(null).teachingStyle("Visual").build();
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.save(any())).thenReturn(testEvent);
+        eventService.update(1L, details, null);
+        verify(mlPredictionClient, never()).predict(any());
+    }
+
+    @Test
+    void testUpdate_SetsNewFields() {
+        Event details = Event.builder().title("New").type(EventType.WORKSHOP)
+                .startDate(testEvent.getStartDate()).endDate(testEvent.getEndDate())
+                .difficulty("Easy").teachingStyle("Kinesthetic").build();
+        when(mlPredictionClient.predict(any())).thenReturn(null);
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.save(any())).thenReturn(testEvent);
+        eventService.update(1L, details, null);
+        assertEquals("Easy", testEvent.getDifficulty());
+        assertEquals("Kinesthetic", testEvent.getTeachingStyle());
+    }
+
     // ── delete ──
     @Test
     void testDeleteById_Success() {
