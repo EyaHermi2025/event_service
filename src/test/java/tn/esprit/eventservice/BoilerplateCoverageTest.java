@@ -277,4 +277,166 @@ class BoilerplateCoverageTest {
         eps2.setId(2L);
         assertEquals(2L, eps2.getId());
     }
+
+    // ── MLPredictionClient inner classes ──
+
+    @Test
+    void testPredictionRequest_Builder() {
+        var req = tn.esprit.eventservice.client.MLPredictionClient.PredictionRequest.builder()
+                .content_type("Video")
+                .difficulty("Medium")
+                .teaching_style("Visual")
+                .build();
+        assertEquals("Video", req.getContent_type());
+        assertEquals("Medium", req.getDifficulty());
+        assertEquals("Visual", req.getTeaching_style());
+    }
+
+    @Test
+    void testPredictionRequest_NoArgsAndSetters() {
+        var req = new tn.esprit.eventservice.client.MLPredictionClient.PredictionRequest();
+        assertNull(req.getContent_type());
+        req.setContent_type("Text");
+        req.setDifficulty("Hard");
+        req.setTeaching_style("Auditory");
+        assertEquals("Text", req.getContent_type());
+        assertEquals("Hard", req.getDifficulty());
+        assertEquals("Auditory", req.getTeaching_style());
+    }
+
+    @Test
+    void testPredictionRequest_AllArgsConstructor() {
+        var req = new tn.esprit.eventservice.client.MLPredictionClient.PredictionRequest("Game", "Easy", "Mixed");
+        assertEquals("Game", req.getContent_type());
+        assertEquals("Easy", req.getDifficulty());
+        assertEquals("Mixed", req.getTeaching_style());
+    }
+
+    @Test
+    void testPredictionRequest_EqualsAndHashCode() {
+        var r1 = tn.esprit.eventservice.client.MLPredictionClient.PredictionRequest.builder()
+                .content_type("V").difficulty("M").teaching_style("A").build();
+        var r2 = tn.esprit.eventservice.client.MLPredictionClient.PredictionRequest.builder()
+                .content_type("V").difficulty("M").teaching_style("A").build();
+        var r3 = tn.esprit.eventservice.client.MLPredictionClient.PredictionRequest.builder()
+                .content_type("X").difficulty("M").teaching_style("A").build();
+
+        assertEquals(r1, r2);
+        assertEquals(r1.hashCode(), r2.hashCode());
+        assertNotEquals(r1, r3);
+        assertEquals(r1, r1); // self
+        assertNotEquals(r1, null);
+        assertNotEquals(r1, "string");
+    }
+
+    @Test
+    void testPredictionRequest_EqualsNullFields() {
+        var r1 = new tn.esprit.eventservice.client.MLPredictionClient.PredictionRequest();
+        var r2 = new tn.esprit.eventservice.client.MLPredictionClient.PredictionRequest();
+        assertEquals(r1, r2); // both all-null
+
+        r1.setContent_type("V");
+        assertNotEquals(r1, r2); // r1 non-null, r2 null
+        assertNotEquals(r2, r1); // r2 null, r1 non-null
+
+        r2.setContent_type("V");
+        assertEquals(r1, r2); // both same
+
+        r1.setDifficulty("M");
+        assertNotEquals(r1, r2);
+        r2.setDifficulty("X"); // different
+        assertNotEquals(r1, r2);
+        r2.setDifficulty("M");
+        assertEquals(r1, r2);
+
+        r1.setTeaching_style("A");
+        assertNotEquals(r1, r2);
+        r2.setTeaching_style("B");
+        assertNotEquals(r1, r2);
+        r2.setTeaching_style("A");
+        assertEquals(r1, r2);
+    }
+
+    @Test
+    void testPredictionRequest_ToString() {
+        var req = tn.esprit.eventservice.client.MLPredictionClient.PredictionRequest.builder()
+                .content_type("V").build();
+        assertNotNull(req.toString());
+        assertTrue(req.toString().contains("V"));
+    }
+
+    @Test
+    void testPredictionResponse_NoArgsAndSetters() {
+        var resp = new tn.esprit.eventservice.client.MLPredictionClient.PredictionResponse();
+        assertNull(resp.getEfficiency_probability());
+        assertNull(resp.getIs_effective());
+        resp.setEfficiency_probability(0.85);
+        resp.setIs_effective(true);
+        assertEquals(0.85, resp.getEfficiency_probability());
+        assertTrue(resp.getIs_effective());
+    }
+
+    @Test
+    void testPredictionResponse_AllArgsConstructor() {
+        var resp = new tn.esprit.eventservice.client.MLPredictionClient.PredictionResponse(0.9, true);
+        assertEquals(0.9, resp.getEfficiency_probability());
+        assertTrue(resp.getIs_effective());
+    }
+
+    @Test
+    void testPredictionResponse_EqualsAndHashCode() {
+        var r1 = new tn.esprit.eventservice.client.MLPredictionClient.PredictionResponse(0.5, true);
+        var r2 = new tn.esprit.eventservice.client.MLPredictionClient.PredictionResponse(0.5, true);
+        var r3 = new tn.esprit.eventservice.client.MLPredictionClient.PredictionResponse(0.6, false);
+
+        assertEquals(r1, r2);
+        assertEquals(r1.hashCode(), r2.hashCode());
+        assertNotEquals(r1, r3);
+        assertEquals(r1, r1);
+        assertNotEquals(r1, null);
+        assertNotEquals(r1, "string");
+    }
+
+    @Test
+    void testPredictionResponse_EqualsNullFields() {
+        var r1 = new tn.esprit.eventservice.client.MLPredictionClient.PredictionResponse();
+        var r2 = new tn.esprit.eventservice.client.MLPredictionClient.PredictionResponse();
+        assertEquals(r1, r2); // both null
+
+        r1.setEfficiency_probability(0.5);
+        assertNotEquals(r1, r2);
+        assertNotEquals(r2, r1);
+        r2.setEfficiency_probability(0.5);
+        assertEquals(r1, r2);
+        r2.setEfficiency_probability(0.7);
+        assertNotEquals(r1, r2);
+        r2.setEfficiency_probability(0.5);
+
+        r1.setIs_effective(true);
+        assertNotEquals(r1, r2);
+        assertNotEquals(r2, r1);
+        r2.setIs_effective(false);
+        assertNotEquals(r1, r2);
+        r2.setIs_effective(true);
+        assertEquals(r1, r2);
+    }
+
+    @Test
+    void testPredictionResponse_ToString() {
+        var resp = new tn.esprit.eventservice.client.MLPredictionClient.PredictionResponse(0.8, true);
+        assertNotNull(resp.toString());
+        assertTrue(resp.toString().contains("0.8"));
+    }
+
+    @Test
+    void testPredictionRequest_HashCode_AllNullFields() {
+        var r = new tn.esprit.eventservice.client.MLPredictionClient.PredictionRequest();
+        assertDoesNotThrow(r::hashCode);
+    }
+
+    @Test
+    void testPredictionResponse_HashCode_AllNullFields() {
+        var r = new tn.esprit.eventservice.client.MLPredictionClient.PredictionResponse();
+        assertDoesNotThrow(r::hashCode);
+    }
 }
