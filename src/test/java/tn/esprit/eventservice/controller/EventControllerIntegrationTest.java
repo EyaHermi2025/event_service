@@ -225,4 +225,19 @@ class EventControllerIntegrationTest {
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated());
     }
+
+    @Test
+    void testMapRegToDTO_EventTypeNull() throws Exception {
+        EventRegistration reg = EventRegistration.builder().id(1L).eventId(1L)
+                .userName("U").userEmail("u@t.com").status(RegistrationStatus.CONFIRMED).build();
+        Event event = Event.builder().id(1L).title("No Type Event").type(null).build();
+        
+        when(eventService.getRegistrationById(1L)).thenReturn(Optional.of(reg));
+        when(eventService.findById(1L)).thenReturn(Optional.of(event));
+        
+        mockMvc.perform(get("/api/events/registrations/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventTitle").value("No Type Event"))
+                .andExpect(jsonPath("$.eventType").value("Other"));
+    }
 }

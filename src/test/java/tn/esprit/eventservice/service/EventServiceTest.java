@@ -311,6 +311,28 @@ class EventServiceTest {
     }
 
     @Test
+    void testUpdate_MLPredictionSkipped_NullType() {
+        Event details = Event.builder().title("Updated").type(null)
+                .startDate(testEvent.getStartDate()).endDate(testEvent.getEndDate())
+                .difficulty("Medium").teachingStyle("Visual").build();
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.save(any())).thenReturn(testEvent);
+        eventService.update(1L, details, null);
+        verify(mlPredictionClient, never()).predict(any());
+    }
+
+    @Test
+    void testUpdate_MLPredictionSkipped_NullTeachingStyle() {
+        Event details = Event.builder().title("Updated").type(EventType.WORKSHOP)
+                .startDate(testEvent.getStartDate()).endDate(testEvent.getEndDate())
+                .difficulty("Medium").teachingStyle(null).build();
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.save(any())).thenReturn(testEvent);
+        eventService.update(1L, details, null);
+        verify(mlPredictionClient, never()).predict(any());
+    }
+
+    @Test
     void testUpdate_SetsNewFields() {
         Event details = Event.builder().title("New").type(EventType.WORKSHOP)
                 .startDate(testEvent.getStartDate()).endDate(testEvent.getEndDate())
