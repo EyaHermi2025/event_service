@@ -12,7 +12,10 @@ import tn.esprit.eventservice.entity.Event;
 import tn.esprit.eventservice.entity.EventRegistration;
 import tn.esprit.eventservice.entity.EventType;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
+import javax.imageio.ImageIO;
 
 @ExtendWith(MockitoExtension.class)
 class TicketServiceTest {
@@ -23,6 +26,14 @@ class TicketServiceTest {
     @InjectMocks
     private TicketService ticketService;
 
+    /** Creates a real tiny 1x1 PNG so OpenPDF's Image.getInstance() accepts it. */
+    private byte[] createValidPngBytes() throws Exception {
+        BufferedImage img = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(img, "png", baos);
+        return baos.toByteArray();
+    }
+
     @Test
     void testGenerateAndSendTicket_Success() throws Exception {
         Event event = Event.builder().id(1L).title("Workshop A")
@@ -31,7 +42,7 @@ class TicketServiceTest {
                 .userName("Eya").userEmail("eya@test.com").seatNumber("A1").build();
 
         when(qrCodeService.generateQRCodeImage(anyString(), eq(200), eq(200)))
-                .thenReturn(new byte[]{1, 2, 3});
+                .thenReturn(createValidPngBytes());
 
         ticketService.generateAndSendTicket(event, reg);
 
@@ -48,7 +59,7 @@ class TicketServiceTest {
                 .userName("User").userEmail("user@test.com").seatNumber(null).build();
 
         when(qrCodeService.generateQRCodeImage(anyString(), eq(200), eq(200)))
-                .thenReturn(new byte[]{1});
+                .thenReturn(createValidPngBytes());
 
         ticketService.generateAndSendTicket(event, reg);
         verify(emailService).sendEmailWithAttachment(anyString(), anyString(), anyString(), any(), anyString());
@@ -62,7 +73,7 @@ class TicketServiceTest {
                 .userName("Test").userEmail("t@t.com").seatNumber("B2").build();
 
         when(qrCodeService.generateQRCodeImage(anyString(), eq(200), eq(200)))
-                .thenReturn(new byte[]{1});
+                .thenReturn(createValidPngBytes());
 
         ticketService.generateAndSendTicket(event, reg);
         verify(emailService).sendEmailWithAttachment(anyString(), anyString(), anyString(), any(), anyString());
@@ -89,7 +100,7 @@ class TicketServiceTest {
                 .userName("U").userEmail("u@t.com").seatNumber("C3").build();
 
         when(qrCodeService.generateQRCodeImage(anyString(), eq(200), eq(200)))
-                .thenReturn(new byte[]{1});
+                .thenReturn(createValidPngBytes());
 
         ticketService.generateAndSendTicket(event, reg);
         verify(emailService).sendEmailWithAttachment(anyString(), anyString(), anyString(), any(),
