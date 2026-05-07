@@ -31,6 +31,7 @@ public class EventService {
     private final EventPhysicalSpaceRepository eventPhysicalSpaceRepository;
     private final EventRegistrationRepository eventRegistrationRepository;
     private final tn.esprit.eventservice.client.ClubClient clubClient;
+    private final tn.esprit.eventservice.client.MLPredictionClient mlPredictionClient;
     private final SimpMessagingTemplate messagingTemplate;
     private final TicketService ticketService;
 
@@ -38,12 +39,14 @@ public class EventService {
             EventPhysicalSpaceRepository eventPhysicalSpaceRepository,
             EventRegistrationRepository eventRegistrationRepository,
             tn.esprit.eventservice.client.ClubClient clubClient,
+            tn.esprit.eventservice.client.MLPredictionClient mlPredictionClient,
             SimpMessagingTemplate messagingTemplate,
             TicketService ticketService) {
         this.eventRepository = eventRepository;
         this.eventPhysicalSpaceRepository = eventPhysicalSpaceRepository;
         this.eventRegistrationRepository = eventRegistrationRepository;
         this.clubClient = clubClient;
+        this.mlPredictionClient = mlPredictionClient;
         this.messagingTemplate = messagingTemplate;
         this.ticketService = ticketService;
     }
@@ -78,6 +81,7 @@ public class EventService {
             clubClient.deductBudget(event.getClubId(), event.getEstimatedCost());
         }
 
+        updateEfficiencyPrediction(event);
         Event saved = eventRepository.save(event);
         if (physicalSpaceIds != null && !physicalSpaceIds.isEmpty()) {
             for (Long psId : physicalSpaceIds) {
@@ -107,7 +111,10 @@ public class EventService {
         existingEvent.setMaxParticipants(details.getMaxParticipants());
         existingEvent.setStatus(details.getStatus());
         existingEvent.setClubId(details.getClubId());
+        existingEvent.setDifficulty(details.getDifficulty());
+        existingEvent.setTeachingStyle(details.getTeachingStyle());
 
+        updateEfficiencyPrediction(existingEvent);
         eventRepository.save(existingEvent);
         eventPhysicalSpaceRepository.deleteByEventId(id);
         if (physicalSpaceIds != null && !physicalSpaceIds.isEmpty()) {
@@ -396,6 +403,37 @@ public class EventService {
         }
         if (event.getEndDate().isBefore(event.getStartDate())) {
             throw new BadRequestException("End date must be greater than or equal to the start date.");
+        }
+    }
+
+    private void updateEfficiencyPrediction(Event event) {
+        if (event.getType() == null || event.getDifficulty() == null || event.getTeachingStyle() == null) {
+            return;
+        }
+
+        try {
+            String mlContentType = switch (event.getType()) {
+                case COMPETITION -> "Game";
+                case WORKSHOP -> "Video";
+                case MEETING -> "Text";
+            };
+
+            tn.esprit.eventservice.client.MLPredictionClient.PredictionRequest request = 
+                tn.esprit.eventservice.client.MLPredictionClient.PredictionRequest.builder()
+                    .content_type(mlContentType)
+                    .difficulty(event.getDifficulty())
+                    .teaching_style(event.getTeachingStyle())
+                    .build();
+
+            tn.esprit.eventservice.client.MLPredictionClient.PredictionResponse response = 
+                mlPredictionClient.predict(request);
+
+            if (response != null) {
+                event.setEfficiencyPrediction(response.getEfficiency_probability());
+            }
+        } catch (Exception e) {
+            // Silently fail if ML service is down, but log it
+            System.err.println("Failed to get ML prediction: " + e.getMessage());
         }
     }
 }

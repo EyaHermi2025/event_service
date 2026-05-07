@@ -23,6 +23,8 @@ spec:
           value: "jdbc:mysql://host.docker.internal:3306/event_service_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false"
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: "http://host.docker.internal:8761/eureka/"
+        - name: ML_SERVICE_URL
+          value: "http://ml-service:5000"
         resources:
           requests:
             cpu: "200m"

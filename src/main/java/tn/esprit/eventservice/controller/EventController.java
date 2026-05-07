@@ -132,6 +132,9 @@ public class EventController {
                 .status(event.getStatus())
                 .clubId(event.getClubId())
                 .estimatedCost(event.getEstimatedCost())
+                .difficulty(event.getDifficulty())
+                .teachingStyle(event.getTeachingStyle())
+                .efficiencyPrediction(event.getEfficiencyPrediction())
                 .build();
     }
 
@@ -147,6 +150,9 @@ public class EventController {
                 .status(dto.getStatus())
                 .clubId(dto.getClubId())
                 .estimatedCost(dto.getEstimatedCost())
+                .difficulty(dto.getDifficulty())
+                .teachingStyle(dto.getTeachingStyle())
+                .efficiencyPrediction(dto.getEfficiencyPrediction())
                 .build();
     }
 

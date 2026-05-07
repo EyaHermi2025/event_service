@@ -61,6 +61,18 @@ public class Event {
     @Builder.Default
     private Double estimatedCost = 0.0;
 
+    @Column(name = "difficulty")
+    @JsonProperty("Difficulty")
+    private String difficulty; // Easy, Medium, Hard
+
+    @Column(name = "teaching_style")
+    @JsonProperty("TeachingStyle")
+    private String teachingStyle; // Visual, Auditory, Kinesthetic, Mixed
+
+    @Column(name = "efficiency_prediction")
+    @JsonProperty("EfficiencyPrediction")
+    private Double efficiencyPrediction;
+
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonIgnoreProperties("event")
     @Builder.Default
